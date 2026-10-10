@@ -2,8 +2,8 @@ openapi: 3.1.0
 info:
   title: hAI! Server HTTP API
   version: 5.0.0
-  x-app-version: 5.5.9
-  x-server-version: 5.5.9
+  x-minimum-app-version: '1.7.4'
+  x-server-version-format: major.minor.patch
   description: |
     Public HTTP endpoints for compatible hAI! servers. Responses use MessagePack
     with MessagePack-CSharp Lz4BlockArray compression. Schemas describe the
@@ -69,8 +69,8 @@ components:
       properties:
         serverVersion:
           type: string
-          description: Full server release in major.minor.patch form; this contract targets 5.5.9.
-          example: 5.5.9
+          description: Full server release in major.minor.patch form.
+          pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
         liveLlms:
           type: array
           items:

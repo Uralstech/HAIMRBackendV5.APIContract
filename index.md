@@ -24,12 +24,12 @@ for the covered routes are deployment policy; a host may require credentials or
 allow access according to its own setup. The contract does not define user
 registration, purchases, TalkTime balance storage, or migration behavior.
 
-This contract targets app release `5.5.9`. The server reports its full
-`major.minor.patch` release as `serverVersion`; the paired server build is
-`5.5.9`. The API generation remains `v5`.
+This contract supports hAI! app version `1.7.4` and later. The server reports
+its full `major.minor.patch` release as `serverVersion`. The API generation
+remains `v5`.
 
 To publish this site with GitHub Pages, choose the repository's Pages settings
-to deploy from the desired branch and select the `/docs` folder.
+to deploy from the desired branch and select the `/ (root)` folder.
 
 ## Compatibility notes
 
