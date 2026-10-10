@@ -1,0 +1,4 @@
+title: hAI! Server API
+description: Public compatibility contract for hAI! server implementations
+theme: jekyll-theme-minimal
+markdown: kramdown

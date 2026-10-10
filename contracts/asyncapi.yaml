@@ -1,0 +1,456 @@
+asyncapi: 3.0.0
+info:
+  title: hAI! Server Session API
+  version: 5.0.0
+  x-app-version: 5.5.9
+  x-server-version: 5.5.9
+  description: |
+    WebSocket session contract for compatible hAI! servers. Every application
+    frame is binary MessagePack encoded with MessagePack-CSharp Lz4BlockArray
+    compression. Payload schemas below describe the decoded values. The session
+    protocol guide documents union encoding and event sequencing.
+servers:
+  production:
+    host: '{host}'
+    pathname: /api/v5
+    protocol: wss
+    protocolVersion: '13'
+    variables:
+      host:
+        default: localhost:5001
+    description: Use ws for local non-TLS development when appropriate.
+    bindings:
+      ws:
+        method: GET
+channels:
+  aiSession:
+    address: /ai/session
+    description: One AI session per WebSocket connection.
+    messages:
+      clientEvent:
+        $ref: '#/components/messages/ClientEvent'
+      serverEvent:
+        $ref: '#/components/messages/ServerEvent'
+    bindings:
+      ws:
+        method: GET
+operations:
+  clientSendsEvent:
+    action: send
+    channel:
+      $ref: '#/channels/aiSession'
+    summary: Client sends an event to the server.
+    messages:
+      - $ref: '#/channels/aiSession/messages/clientEvent'
+  serverSendsEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/aiSession'
+    summary: Client receives an event from the server.
+    messages:
+      - $ref: '#/channels/aiSession/messages/serverEvent'
+components:
+  messages:
+    ClientEvent:
+      name: ClientEvent
+      title: Client session event
+      contentType: application/x-msgpack
+      payload:
+        $ref: '#/components/schemas/ClientEventUnion'
+      x-messagepack-compression: Lz4BlockArray
+    ServerEvent:
+      name: ServerEvent
+      title: Server session event
+      contentType: application/x-msgpack
+      payload:
+        $ref: '#/components/schemas/ServerEventUnion'
+      x-messagepack-compression: Lz4BlockArray
+  schemas:
+    ClientEventUnion:
+      description: MessagePack-CSharp union [integer tag, payload].
+      oneOf:
+        - $ref: '#/components/schemas/SessionCreateUnion'
+        - $ref: '#/components/schemas/ClientMessageDeltaUnion'
+        - $ref: '#/components/schemas/AddMessageUnion'
+        - $ref: '#/components/schemas/ForceBeginTurnUnion'
+        - $ref: '#/components/schemas/AcknowledgeUserTurnUnion'
+    ServerEventUnion:
+      description: MessagePack-CSharp union [integer tag, payload].
+      oneOf:
+        - $ref: '#/components/schemas/ServerMessageDeltaUnion'
+        - $ref: '#/components/schemas/SessionReadyUnion'
+        - $ref: '#/components/schemas/FunctionCallsUnion'
+        - $ref: '#/components/schemas/UserTurnStartUnion'
+        - $ref: '#/components/schemas/UserTurnEndUnion'
+        - $ref: '#/components/schemas/UserTurnTranscriptionUnion'
+        - $ref: '#/components/schemas/TurnGenerationStartUnion'
+        - $ref: '#/components/schemas/TurnGenerationEndUnion'
+        - $ref: '#/components/schemas/UsageUnion'
+        - $ref: '#/components/schemas/ErrorUnion'
+    SessionCreateUnion:
+      type: array
+      items:
+        - const: 0
+        - $ref: '#/components/schemas/SessionCreateEvent'
+      minItems: 2
+      maxItems: 2
+    ClientMessageDeltaUnion:
+      description: Client event tag 1.
+      type: array
+      minItems: 2
+      maxItems: 2
+      items:
+        - const: 1
+        - $ref: '#/components/schemas/MessageDeltaEvent'
+    ServerMessageDeltaUnion:
+      description: Server event tag 0.
+      type: array
+      minItems: 2
+      maxItems: 2
+      items:
+        - const: 0
+        - $ref: '#/components/schemas/MessageDeltaEvent'
+    AddMessageUnion:
+      $ref: '#/components/schemas/TaggedAddMessage'
+    ForceBeginTurnUnion:
+      $ref: '#/components/schemas/TaggedForceBeginTurn'
+    AcknowledgeUserTurnUnion:
+      $ref: '#/components/schemas/TaggedAcknowledgeUserTurn'
+    SessionReadyUnion:
+      $ref: '#/components/schemas/TaggedSessionReady'
+    FunctionCallsUnion:
+      $ref: '#/components/schemas/TaggedFunctionCalls'
+    UserTurnStartUnion:
+      $ref: '#/components/schemas/TaggedUserTurnStart'
+    UserTurnEndUnion:
+      $ref: '#/components/schemas/TaggedUserTurnEnd'
+    UserTurnTranscriptionUnion:
+      $ref: '#/components/schemas/TaggedUserTurnTranscription'
+    TurnGenerationStartUnion:
+      $ref: '#/components/schemas/TaggedTurnGenerationStart'
+    TurnGenerationEndUnion:
+      $ref: '#/components/schemas/TaggedTurnGenerationEnd'
+    UsageUnion:
+      $ref: '#/components/schemas/TaggedUsage'
+    ErrorUnion:
+      $ref: '#/components/schemas/TaggedError'
+    TaggedAddMessage:
+      type: array
+      items:
+        - const: 2
+        - $ref: '#/components/schemas/AddMessageEvent'
+      minItems: 2
+      maxItems: 2
+    TaggedForceBeginTurn:
+      type: array
+      items:
+        - const: 3
+        - $ref: '#/components/schemas/ForceBeginTurnEvent'
+      minItems: 2
+      maxItems: 2
+    TaggedAcknowledgeUserTurn:
+      type: array
+      minItems: 2
+      maxItems: 2
+      items:
+        - const: 4
+        - type: object
+    TaggedSessionReady:
+      type: array
+      items:
+        - const: 1
+        - $ref: '#/components/schemas/SessionReadyEvent'
+      minItems: 2
+      maxItems: 2
+    TaggedFunctionCalls:
+      type: array
+      items:
+        - const: 2
+        - $ref: '#/components/schemas/FunctionCallsEvent'
+      minItems: 2
+      maxItems: 2
+    TaggedUserTurnStart:
+      type: array
+      minItems: 2
+      maxItems: 2
+      items:
+        - const: 3
+        - type: object
+    TaggedUserTurnEnd:
+      type: array
+      minItems: 2
+      maxItems: 2
+      items:
+        - const: 4
+        - type: object
+    TaggedUserTurnTranscription:
+      type: array
+      items:
+        - const: 5
+        - $ref: '#/components/schemas/UserTurnTranscriptionEvent'
+      minItems: 2
+      maxItems: 2
+    TaggedTurnGenerationStart:
+      type: array
+      minItems: 2
+      maxItems: 2
+      items:
+        - const: 6
+        - type: object
+    TaggedTurnGenerationEnd:
+      type: array
+      minItems: 2
+      maxItems: 2
+      items:
+        - const: 7
+        - type: object
+    TaggedUsage:
+      description: Billing-aware implementations may emit this after a debit.
+      type: array
+      items:
+        - const: 8
+        - $ref: '#/components/schemas/UsageEvent'
+      minItems: 2
+      maxItems: 2
+    TaggedError:
+      type: array
+      items:
+        - const: 9
+        - $ref: '#/components/schemas/ErrorEvent'
+      minItems: 2
+      maxItems: 2
+    SessionCreateEvent:
+      type: object
+      required: [configs]
+      properties:
+        configs:
+          type: array
+          minItems: 1
+          maxItems: 2
+          items:
+            $ref: '#/components/schemas/AiConfigUnion'
+    AiConfigUnion:
+      description: Config union [tag, config], where tags are LLM 0, Live LLM 1, and TTS 2.
+      oneOf:
+        - type: array
+          items:
+            - const: 0
+            - $ref: '#/components/schemas/LlmConfig'
+          minItems: 2
+          maxItems: 2
+        - type: array
+          items:
+            - const: 1
+            - $ref: '#/components/schemas/LiveLlmConfig'
+          minItems: 2
+          maxItems: 2
+        - type: array
+          items:
+            - const: 2
+            - $ref: '#/components/schemas/TtsConfig'
+          minItems: 2
+          maxItems: 2
+    LlmConfig:
+      type: object
+      required: [modelId]
+      properties:
+        modelId: { type: string }
+        thinkingLevel:
+          type: string
+          enum: [minimal, low, medium, high]
+          default: minimal
+        instructions: { type: [string, 'null'] }
+        messages:
+          type: [array, 'null']
+          items: { $ref: '#/components/schemas/ChatMessageUnion' }
+        tools:
+          type: [array, 'null']
+          items: { $ref: '#/components/schemas/ToolDefinitionUnion' }
+    LiveLlmConfig:
+      allOf:
+        - $ref: '#/components/schemas/LlmConfig'
+        - type: object
+          required: [voiceName]
+          properties:
+            voiceName: { type: string }
+    TtsConfig:
+      type: object
+      required: [modelId, language, voiceName]
+      properties:
+        modelId: { type: string }
+        language: { type: string }
+        voiceName: { type: string }
+        prompt: { type: [string, 'null'] }
+    ChatMessageUnion:
+      description: MessagePack union [tag, message], TextChatMessage tag 0 and MediaChatMessage tag 1.
+      oneOf:
+        - type: array
+          items:
+            - const: 0
+            - $ref: '#/components/schemas/TextChatMessage'
+          minItems: 2
+          maxItems: 2
+        - type: array
+          items:
+            - const: 1
+            - $ref: '#/components/schemas/MediaChatMessage'
+          minItems: 2
+          maxItems: 2
+    TextChatMessage:
+      type: object
+      required: [role, text]
+      properties:
+        role: { type: string, enum: [system, user, assistant] }
+        text: { type: string }
+    MediaChatMessage:
+      type: object
+      required: [role, content, mimeType]
+      properties:
+        role: { type: string, enum: [system, user, assistant] }
+        content:
+          type: string
+          description: Raw MessagePack binary value (byte array).
+          x-messagepack-type: bin
+        mimeType: { type: string }
+    ToolDefinitionUnion:
+      description: MessagePack union [tag, definition], LlmSearch tag 0 and LlmFunction tag 1.
+      oneOf:
+        - type: array
+          items:
+            - const: 0
+            - type: object
+          minItems: 2
+          maxItems: 2
+        - type: array
+          items:
+            - const: 1
+            - $ref: '#/components/schemas/LlmFunction'
+          minItems: 2
+          maxItems: 2
+    LlmFunction:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string }
+        description: { type: [string, 'null'] }
+        parameterSchema:
+          oneOf:
+            - $ref: '#/components/schemas/JsonSchema'
+            - type: 'null'
+    JsonSchema:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: array
+          description: One or more JSON value types.
+          items:
+            type: string
+            enum: [string, number, integer, boolean, array, object, null]
+        format: { type: [string, 'null'] }
+        title: { type: [string, 'null'] }
+        description: { type: [string, 'null'] }
+        enum:
+          type: [array, 'null']
+          items: { type: string }
+        maxItems: { type: [integer, 'null'] }
+        minItems: { type: [integer, 'null'] }
+        properties:
+          type: [object, 'null']
+          additionalProperties: { $ref: '#/components/schemas/JsonSchema' }
+        required:
+          type: [array, 'null']
+          items: { type: string }
+        maxProperties: { type: [integer, 'null'] }
+        minProperties: { type: [integer, 'null'] }
+        maxLength: { type: [integer, 'null'] }
+        minLength: { type: [integer, 'null'] }
+        pattern: { type: [string, 'null'] }
+        example: { type: [string, 'null'] }
+        anyOf:
+          type: [array, 'null']
+          items: { $ref: '#/components/schemas/JsonSchema' }
+        items:
+          oneOf:
+            - $ref: '#/components/schemas/JsonSchema'
+            - type: 'null'
+        maximum: { type: [integer, 'null'] }
+        minimum: { type: [integer, 'null'] }
+    MessageDeltaEvent:
+      type: object
+      required: [delta, isComplete]
+      properties:
+        delta: { $ref: '#/components/schemas/ChatMessageUnion' }
+        isComplete: { type: boolean }
+    AddMessageEvent:
+      type: object
+      required: [message]
+      properties:
+        message: { $ref: '#/components/schemas/ChatMessageUnion' }
+    ForceBeginTurnEvent:
+      type: object
+      required: [messages, functionResponses]
+      properties:
+        messages:
+          type: array
+          items: { $ref: '#/components/schemas/ChatMessageUnion' }
+        functionResponses:
+          type: array
+          items: { $ref: '#/components/schemas/FunctionResponse' }
+    FunctionResponse:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string }
+        data: { type: [string, 'null'] }
+    FunctionCallsEvent:
+      type: object
+      required: [functionCalls]
+      properties:
+        functionCalls:
+          type: array
+          items: { $ref: '#/components/schemas/FunctionCall' }
+    FunctionCall:
+      type: object
+      required: [id, toolId]
+      properties:
+        id: { type: string }
+        toolId: { type: string }
+        arguments: { type: [string, 'null'] }
+    SessionReadyEvent:
+      type: object
+      required: [serverVersion]
+      properties:
+        serverVersion:
+          type: string
+          description: Full server release in major.minor.patch form; this contract targets 5.5.9.
+          example: 5.5.9
+        inputAudioFormat: { oneOf: [{ $ref: '#/components/schemas/AudioFormat' }, { type: 'null' }] }
+        outputAudioFormat: { oneOf: [{ $ref: '#/components/schemas/AudioFormat' }, { type: 'null' }] }
+    AudioFormat:
+      type: object
+      required: [format, channels, sampleRate]
+      properties:
+        format: { type: string, enum: [pcm16, wav] }
+        channels: { type: integer }
+        sampleRate: { type: integer }
+    UserTurnTranscriptionEvent:
+      type: object
+      required: [transcript]
+      properties:
+        transcript: { type: string }
+    UsageEvent:
+      type: object
+      required: [talkTimeBalance]
+      properties:
+        talkTimeBalance:
+          type: number
+          description: IAP/TalkTime-specific value; omit this event when the deployment has no compatible balance feature.
+    ErrorEvent:
+      type: object
+      required: [code, error]
+      properties:
+        code:
+          type: string
+          enum: [unknown, insufficient_talk_time, registration_required, accounting_failed, configuration_failed, invalid_request, provider_failed, session_timed_out, safety_blocked]
+        error: { type: string }

@@ -1,0 +1,155 @@
+openapi: 3.1.0
+info:
+  title: hAI! Server HTTP API
+  version: 5.0.0
+  x-app-version: 5.5.9
+  x-server-version: 5.5.9
+  description: |
+    Public HTTP endpoints for compatible hAI! servers. Responses use MessagePack
+    with MessagePack-CSharp Lz4BlockArray compression. Schemas describe the
+    decoded MessagePack values, not JSON response bodies.
+servers:
+  - url: https://{host}
+    variables:
+      host:
+        default: localhost:5001
+paths:
+  /api/v5/ai/catalog:
+    get:
+      operationId: getAiCatalog
+      summary: Get available AI models and their public capabilities
+      responses:
+        '200':
+          description: Model catalog in compressed MessagePack format.
+          content:
+            application/x-msgpack:
+              schema:
+                $ref: '#/components/schemas/SessionCatalog'
+              x-messagepack-compression: Lz4BlockArray
+        '500':
+          description: The catalog could not be produced.
+  /api/v5/ai/tts/voices:
+    get:
+      operationId: getTtsVoices
+      summary: List voices for a TTS model and language
+      parameters:
+        - name: type
+          in: query
+          required: true
+          description: Public TTS model ID from the catalog.
+          schema:
+            type: string
+        - name: language
+          in: query
+          required: true
+          description: Language tag or provider-specific language identifier.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Available voices in compressed MessagePack format.
+          content:
+            application/x-msgpack:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VoiceInfo'
+              x-messagepack-compression: Lz4BlockArray
+        '400':
+          description: The language is missing or blank.
+        '404':
+          description: The model ID is unknown or the model has been retired.
+        '500':
+          description: Voice discovery failed.
+components:
+  schemas:
+    SessionCatalog:
+      type: object
+      required: [serverVersion, liveLlms, llms, tts]
+      properties:
+        serverVersion:
+          type: string
+          description: Full server release in major.minor.patch form; this contract targets 5.5.9.
+          example: 5.5.9
+        liveLlms:
+          type: array
+          items:
+            $ref: '#/components/schemas/LiveLlmInfo'
+        llms:
+          type: array
+          items:
+            $ref: '#/components/schemas/LlmInfo'
+        tts:
+          type: array
+          items:
+            $ref: '#/components/schemas/TtsInfo'
+    AiInfo:
+      type: object
+      required: [id, group, displayName, description, pricingTier, isRetired]
+      properties:
+        id:
+          type: string
+          description: Stable public identifier used in session configuration.
+        group:
+          type: string
+        displayName:
+          type: string
+        description:
+          type: string
+        pricingTier:
+          type: string
+        deprecationWarning:
+          type: [string, 'null']
+        retirementDate:
+          type: [string, 'null']
+          format: date-time
+          description: MessagePack timestamp representing a UTC date and time.
+          x-messagepack-type: timestamp
+        isRetired:
+          type: boolean
+    LlmInfo:
+      allOf:
+        - $ref: '#/components/schemas/AiInfo'
+        - type: object
+          required: [supportsThinking]
+          properties:
+            supportsThinking:
+              type: boolean
+    LiveLlmInfo:
+      allOf:
+        - $ref: '#/components/schemas/LlmInfo'
+        - type: object
+          required: [voices]
+          properties:
+            voices:
+              type: array
+              items:
+                $ref: '#/components/schemas/VoiceInfo'
+    TtsInfo:
+      allOf:
+        - $ref: '#/components/schemas/AiInfo'
+        - type: object
+          required: [voices, isPromptable, textGenerationTips]
+          properties:
+            voices:
+              description: Null means query the voice-discovery endpoint for the chosen language.
+              type: [array, 'null']
+              items:
+                $ref: '#/components/schemas/VoiceInfo'
+            isPromptable:
+              type: boolean
+            textGenerationTips:
+              type: [string, 'null']
+    VoiceInfo:
+      type: object
+      required: [name, gender, suggestedSampleRate]
+      properties:
+        name:
+          type: string
+        displayName:
+          type: [string, 'null']
+        gender:
+          type: string
+        suggestedSampleRate:
+          type: integer
+          description: Zero means no suggested natural sample rate is available.
