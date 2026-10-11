@@ -10,7 +10,7 @@ This guide is the behavioral companion to [AsyncAPI](asyncapi.yaml). The
 AsyncAPI schemas describe decoded values. Wire frames are binary MessagePack
 using MessagePack-CSharp `Lz4BlockArray` compression.
 
-This contract supports hAI! app version `1.7.4` and later. `serverVersion`
+This contract supports hAI! app version `1.8.0` and later. `serverVersion`
 reports the server's full `major.minor.patch` release; the `/api/v5` path
 identifies the API generation.
 

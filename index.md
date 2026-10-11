@@ -24,7 +24,7 @@ for the covered routes are deployment policy; a host may require credentials or
 allow access according to its own setup. The contract does not define user
 registration, purchases, TalkTime balance storage, or migration behavior.
 
-This contract supports hAI! app version `1.7.4` and later. The server reports
+This contract supports hAI! app version `1.8.0` and later. The server reports
 its full `major.minor.patch` release as `serverVersion`. The API generation
 remains `v5`.
 

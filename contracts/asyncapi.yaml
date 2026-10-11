@@ -2,7 +2,7 @@ asyncapi: 3.0.0
 info:
   title: hAI! Server Session API
   version: 5.0.0
-  x-minimum-app-version: '1.7.4'
+  x-minimum-app-version: '1.8.0'
   x-server-version-format: major.minor.patch
   description: |
     WebSocket session contract for compatible hAI! servers. Every application
